@@ -1,0 +1,17 @@
+{
+  "skills": [
+    {
+      "name": "wechat-publisher",
+      "path": "skills/wechat-publisher",
+      "description": "使用 @yangodev/wechat-publisher CLI 渲染 Markdown 文章、预览微信公众号 HTML、校验素材并创建微信公众号草稿。",
+      "requires": [
+        {
+          "type": "npm",
+          "package": "@yangodev/wechat-publisher",
+          "binary": "wechat-publisher",
+          "version": ">=0.3.0"
+        }
+      ]
+    }
+  ]
+}
