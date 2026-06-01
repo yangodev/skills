@@ -1,40 +1,44 @@
 ---
 name: wechat-publisher
-description: 使用 WeChat Publisher CLI 渲染 Markdown 文章、预览微信公众号 HTML、校验素材，并通过本地模式或中心 token 模式创建微信公众号草稿。
+description: 使用官方 npm 包 @yangodev/wechat-renderer 和 @yangodev/wechat-publisher，将 Markdown 渲染为微信公众号文章包，并创建微信公众号草稿箱草稿。
 ---
 
 # WeChat Publisher
 
-当用户希望 Codex 基于 Markdown 文章准备、预览、校验或创建微信公众号草稿时，使用这个 Skill。
+当用户希望基于 Markdown 文章准备微信公众号预览、检查发布包，或创建微信公众号草稿箱草稿时，使用这个 Skill。
 
-这个 Skill 是 CLI 适配器，不包含发布器实现。CLI 需要通过 npm 或本地发布包单独安装。
+这个 Skill 是轻量适配器，不包含渲染器或发布器实现。实际能力来自官方 npm 包：
+
+- `@yangodev/wechat-renderer`：把 Markdown 渲染成 `article-package.json`、`preview.html` 和本地文章包。
+- `@yangodev/wechat-publisher`：读取已渲染的文章包，上传素材，并创建微信公众号草稿箱草稿。
 
 ## 安全规则
 
 - 不要要求用户在聊天里粘贴 AppSecret、中心 API key、access_token、Cookie 或 session。
 - 不要打印 AppSecret、中心 API key、access_token、Cookie 或 session。
 - 把 `wechat-publisher.config.json` 和 `.wechat-publisher.config.json` 当作本机私有文件。
-- 不要公开发表文章。CLI 的 `draft` 命令只创建微信草稿。
+- 不要公开发表或群发文章。CLI 的 `draft` 命令只创建微信草稿箱草稿。
 - 不要把 Markdown、文章 HTML、图片文件、封面文件或本地路径发送给中心服务。中心模式只请求短期 token。
 
-## CLI 检查
+## 安装检查
 
-使用前先检查 CLI：
+优先使用项目内安装包；如果项目没有安装，再建议用户从官方 npm registry 安装：
 
 ```bash
-wechat-publisher --help
+npm install @yangodev/wechat-renderer @yangodev/wechat-publisher
 ```
 
-如果 `--help` 中已经包含 `doctor` 命令，发布前优先运行：
+如果用户需要全局命令：
 
 ```bash
-wechat-publisher doctor --article article.md
+npm install -g @yangodev/wechat-renderer @yangodev/wechat-publisher
 ```
 
-如果没有安装，请让用户安装 CLI 包：
+使用前先检查版本：
 
 ```bash
-npm install -g @yangodev/wechat-publisher
+npx wechat-renderer --version
+npx wechat-publisher --version
 ```
 
 也可以运行本 Skill 自带的 doctor 脚本：
@@ -48,17 +52,17 @@ node skills/wechat-publisher/scripts/doctor.mjs
 本地模式使用用户自己的微信公众号 AppID/AppSecret 和 IP 白名单：
 
 ```bash
-wechat-publisher init \
+npx wechat-publisher init \
   --mode local \
   --app-id wx_xxx \
   --app-secret xxx \
   --author "作者名称"
 ```
 
-中心模式使用中心 token 账号：
+中心模式使用中心 token 服务：
 
 ```bash
-wechat-publisher init \
+npx wechat-publisher init \
   --mode center \
   --center-url https://api.yango.dev \
   --account acct_xxx \
@@ -66,41 +70,62 @@ wechat-publisher init \
   --author "作者名称"
 ```
 
-该命令会写入 `wechat-publisher.config.json`，并只打印脱敏摘要。
+配置会写入 `wechat-publisher.config.json`，该文件只保存在本机，不要提交到 Git 仓库。
 
 ## 正常流程
 
-文章或素材变化后，先创建本地预览：
+先渲染 Markdown：
 
 ```bash
-wechat-publisher doctor --article article.md --config wechat-publisher.config.json
-wechat-publisher draft article.md --out dist --dry-run --submit-preview
+npx wechat-renderer render article.md --out dist
 ```
 
-如果当前安装的 CLI 还不支持 `doctor`，则用 `wechat-publisher check article.md` 和 `draft --dry-run --submit-preview` 代替。
+检查发布包：
 
-检查生成文件：
+```bash
+npx wechat-renderer check article.md
+npx wechat-publisher doctor --package dist --config wechat-publisher.config.json
+```
 
+无阻塞错误后，创建微信草稿箱草稿：
+
+```bash
+npx wechat-publisher draft dist \
+  --config wechat-publisher.config.json \
+  --token-mode center \
+  --submit-preview
+```
+
+如果只想验证，不创建真实草稿：
+
+```bash
+npx wechat-publisher draft dist \
+  --config wechat-publisher.config.json \
+  --token-mode center \
+  --dry-run \
+  --submit-preview
+```
+
+`dist` 可以是包含 `article-package.json` 的目录，也可以直接传入 `dist/article-package.json`。
+
+## 产物检查
+
+渲染阶段通常生成：
+
+- `dist/article-package.json`
 - `dist/preview.html`
+- `dist/publish-report.json`
+- `dist/assets/`
+
+草稿箱阶段通常生成：
+
 - `dist/wechat-submit.html`
 - `dist/wechat-draft-payload.json`
 - `dist/wechat-draft-report.json`
 
-如果没有阻塞错误，再创建微信草稿：
+优先读取 `wechat-draft-report.json` 判断草稿创建结果。
 
-```bash
-wechat-publisher draft article.md --out dist --submit-preview
-```
-
-对已有文章包：
-
-```bash
-wechat-publisher draft dist/article-package.json --out dist --submit-preview
-```
-
-## 诊断
-
-命令失败时，优先读取 `wechat-draft-report.json`。常见诊断码：
+## 常见诊断
 
 - `wechat.ip_allowlist`：把当前公网 IP 或中心服务 IP 加入微信白名单。
 - `wechat.invalid_app_id`：检查 AppID 是否属于目标公众号。
@@ -113,15 +138,18 @@ wechat-publisher draft dist/article-package.json --out dist --submit-preview
 - `center.forbidden`：检查 API key 是否属于配置的账号。
 - `center.not_found`：检查 `center.url`。
 - `center.unavailable`：稍后重试，或检查中心服务状态。
-- `center.rate_limited`：稍后重试；这是频率或风控限制。
+- `center.rate_limited`：稍后重试。
 
 ## 输出标准
 
 运行 CLI 后，向用户报告：
 
-- 使用的命令；
-- 生成的输出目录；
+- 使用的命令族，不展示密钥；
+- 输入文章路径；
+- 输出文章包目录；
+- `wechat-draft-report.json` 路径；
 - 草稿状态；
 - 创建成功时的 draft media id；
 - 错误和警告数量；
-- 任意诊断码对应的下一步。
+- 任意诊断码对应的下一步；
+- 仍需用户进入微信公众号后台人工预览、保存或发布。

@@ -6,7 +6,7 @@
 
 ## 当前 Skill
 
-- `wechat-publisher`：调用 `@yangodev/wechat-publisher` CLI，完成 Markdown 渲染、微信公众号 HTML 预览、素材校验和微信公众号草稿创建。
+- `wechat-publisher`：调用 `@yangodev/wechat-renderer` 和 `@yangodev/wechat-publisher`，完成 Markdown 渲染、微信公众号 HTML 预览、素材校验和微信公众号草稿箱创建。
 
 ## 目录结构
 
@@ -28,10 +28,11 @@ mkdir -p .codex/skills
 cp -R skills/wechat-publisher .codex/skills/
 ```
 
-`wechat-publisher` Skill 需要单独安装 CLI：
+`wechat-publisher` Skill 需要单独安装官方 npm 包：
 
 ```bash
-npm install -g @yangodev/wechat-publisher
+npm install -g @yangodev/wechat-renderer @yangodev/wechat-publisher
+wechat-renderer --help
 wechat-publisher --help
 ```
 

@@ -8,6 +8,7 @@ const checks = [];
 
 checks.push(checkCommand("node", ["--version"]));
 checks.push(checkCommand("npm", ["--version"]));
+checks.push(checkCommand("wechat-renderer", ["--version"]));
 checks.push(checkCommand("wechat-publisher", ["--version"]));
 
 const configPath = path.resolve("wechat-publisher.config.json");
@@ -49,7 +50,7 @@ async function checkConfig(filePath) {
       check: "publisher-config",
       ok: false,
       value: filePath,
-      message: "Config not found. Run wechat-publisher init first.",
+      message: "Config not found. Run wechat-publisher init first before creating a real draft.",
     };
   }
 }
